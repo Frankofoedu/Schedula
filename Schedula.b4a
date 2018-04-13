@@ -1,0 +1,250 @@
+﻿Version=7.01
+NumberOfModules=5
+Module1=Starter
+Module2=Messaging
+Module3=Add
+Module4=SearchView
+Module5=mm
+Build1=Default,b4a.example
+ManifestCode='This code will be applied to the manifest file during compilation.~\n~'You do not need to modify it in most cases.~\n~'See this link for for more information: http://www.b4x.com/forum/showthread.php?p=78136~\n~AddManifestText(~\n~<uses-sdk android:minSdkVersion="5" android:targetSdkVersion="19"/>~\n~<supports-screens android:largeScreens="true" ~\n~    android:normalScreens="true" ~\n~    android:smallScreens="true" ~\n~    android:anyDensity="true"/>)~\n~SetApplicationAttribute(android:icon, "@drawable/icon")~\n~SetApplicationAttribute(android:label, "$LABEL$")~\n~AddPermission(android.permission.READ_CONTACTS)~\n~'End of default text.~\n~
+IconFile=
+NumberOfFiles=14
+File1=2.bal
+File2=alarm_clock-80.png
+File3=Alpha Thin.ttf
+File4=calendar_plu-60.png
+File5=contacts-50.png
+File6=filled_message-48.png
+File7=kr1.ttf
+File8=lucid.ttf
+File9=Main.bal
+File10=person_male-40.png
+File11=plus-48.png
+File12=queue.bal
+File13=sent.bal
+File14=violatio.ttf
+NumberOfLibraries=8
+Library1=core
+Library2=sql
+Library3=tabstripviewpager
+Library4=javaobject
+Library5=reflection
+Library6=contactsutils
+Library7=dialogs
+Library8=ime
+@EndOfDesignText@
+#Region  Project Attributes 
+	#ApplicationLabel: B4A Example
+	#VersionCode: 1
+	#VersionName: 
+	'SupportedOrientations possible values: unspecified, landscape or portrait.
+	#SupportedOrientations: portrait
+	#CanInstallToExternalStorage: False
+#End Region
+
+#Region  Activity Attributes 
+	#FullScreen: True
+	#IncludeTitle: False
+#End Region
+
+Sub Process_Globals
+	'These global variables will be declared once when the application starts.
+	'These variables can be accessed from all modules.
+	Dim timer1 As Timer
+End Sub
+
+Sub Globals
+	'These global variables will be redeclared each time the activity is created.
+	'These variables can only be accessed from this module.
+
+	Private PnlSplash As Panel
+	Private PnlHome As Panel
+	Private ScrlvSent As ScrollView 
+	Private ScrlvQueue As ScrollView
+	Private TabStrip1 As TabStrip
+	Dim paneltop As Int
+	
+	Dim PanelHeight  = 45dip
+	
+	Dim count As Int = 1
+End Sub
+
+Sub Activity_Create(FirstTime As Boolean)
+	'Do not forget to load the layout file created with the visual designer. For example:
+	'Activity.LoadLayout("Layout1")
+	timer1.Initialize("Timer1",3000)
+	Activity.LoadLayout("Main")
+	TabStrip1.LoadLayout("queue","QUEUE")
+	TabStrip1.LoadLayout("sent","SENT")
+	
+		ScrlvQueue.Panel.Width = ScrlvQueue.Width
+	ScrlvSent.Panel.Width = ScrlvSent.Width
+	ScrlvQueue.Panel.Height = ( Activity.Height - 60) * 0.1
+	ScrlvQueue.Color = Colors.green
+	
+	'PnlHome.SetLayout(Activity.Width,0,PnlHome.Width,PnlHome.Height)
+	timer1.Enabled = True
+	
+	If FirstTime Then
+		File.Delete(File.DirInternal, "Schedule.db") ' only for testing, removes the database
+		
+		'check if the database already exists
+		If File.Exists(File.DirInternal, "Schedule.db") = False Then
+			'if not, initialize it
+			Messaging.SQL1.Initialize(File.DirInternal, "Schedule.db", True)
+			'and create it
+			CreateDataBase
+		End If
+	End If
+	
+	For Each lbl As Label In GetAllTabLabels(TabStrip1)
+		lbl.Width = (PnlHome.Width)/2
+	Next
+	
+End Sub
+
+Sub Activity_Resume
+
+End Sub
+
+Sub Activity_Pause (UserClosed As Boolean)
+
+End Sub
+
+Sub Timer1_Tick
+	timer1.Enabled = False
+	PnlSplash.SetVisibleAnimated(4000,False)
+End Sub
+
+Sub CreateDataBase
+	Private Query As String
+	
+	Query = "CREATE TABLE queue (ID INTEGER PRIMARY KEY, Contact TEXT, Message TEXT, DateTime INTEGER, Status INTEGER)"
+	Messaging.SQL1.ExecNonQuery(Query)
+End Sub
+
+Public Sub GetAllTabLabels (tabstrip As TabStrip) As List
+	Dim jo As JavaObject = tabstrip
+	Dim r As Reflector
+	r.Target = jo.GetField("tabStrip")
+	Dim tc As Panel = r.GetField("tabsContainer")
+	Dim res As List
+	res.Initialize
+	For Each v As View In tc
+		If v Is Label Then res.Add(v)
+	Next
+	Return res   
+End Sub
+
+Sub QueryDbQue(scv As ScrollView)
+	Dim query As String = "SELECT * FROM queue WHERE Status = 1"
+	Dim curs As Cursor = Messaging.SQL1.ExecQuery(query)
+	For i = 0 To curs.RowCount - 1
+		curs.Position = i
+		AddMsgPanel(scv,curs.GetString("Contact"),curs.GetString("Message"),curs.GetString("Datetime"))
+		
+	Next
+	
+End Sub
+
+Sub AddMsgPanel(scv As ScrollView, test As String, xtext As String, ytext As String,ztext As String)
+	Dim panel0 As Panel
+	panel0 = scv.Panel
+	
+	
+	Dim panel1 As Panel
+	Dim label1 As Label
+	Dim label2 As Label
+	Dim label3 As Label
+	Dim label4 As Label
+	Dim imgv As ImageView
+	Dim iconlbl As Label 
+	
+	panel1.Initialize("Panel1")
+	label1.Initialize("")
+	label2.Initialize("")
+	label3.Initialize("")
+	label4.Initialize("")
+	imgv.Initialize("")
+	iconlbl.Initialize("")
+	
+	'panel1.Color = Colors.ARGB(0,255,255,255)
+	
+	Dim j As Int = panel0.Width * 0.9
+	Dim k As Int  = ( Activity.Height - 60) * 0.1
+	
+	
+	label1.Text  = test
+	label1.Text.ToUpperCase
+	label1.TextSize = 22
+	label1.TextColor = Colors.Black
+	label1.Typeface = Typeface.LoadFromAssets("kr1.ttf")
+	label1.Typeface = Typeface.DEFAULT_BOLD
+	'label1.Color = Colors.Black
+	
+	label1.Tag = 0
+	
+	label2.TextSize = 13
+	label2.TextColor = Colors.Black
+	label2.Tag = 1
+	label2.Text = xtext
+	'label2.Color = Colors.Blue
+	
+	
+	label3.TextColor = Colors.Black
+	label3.Typeface = Typeface.LoadFromAssets("violatio.ttf")
+	label3.Gravity = Gravity.LEFT
+	label3.Gravity = Gravity.BOTTOM
+	label3.TextSize = 14
+	label3.Tag = 2
+	label3.Text = ytext
+	'label3.Color = Colors.Green
+	
+	label4.TextColor = Colors.Black
+	label4.Gravity = Gravity.LEFT
+	label4.Gravity = Gravity.CENTER_VERTICAL
+	label4.TextSize = 11
+	label4.Tag = 3
+	label4.Text = ztext
+'	label4.Color = Colors.Red
+	
+	
+	imgv.Bitmap = LoadBitmap(File.DirAssets,"contacts-50.png")
+	imgv.Gravity = Gravity.TOP
+	
+	
+	
+	'label1.Color = Colors.Green
+	
+	
+	panel1.AddView(label1, j * 0.2, 0, j * 0.63, k * 0.375)
+	panel1.AddView(label2,	j * 0.2,k * 0.375, j * 0.63, k * 0.625)
+	panel1.AddView(label3, j * 0.83, k * 0.05, j * 0.17, k * 0.375)
+	panel1.AddView(label4, j * 0.83, k * 0.43, j * 0.17, k * 0.375)
+	
+	panel1.AddView(imgv, 0, 0, 0.2 * j, k)
+	
+	panel0.AddView(panel1,(panel0.Width - j)/2,paneltop,j,k)
+	'panel1.AddView(panelUpdt,0,paneltop,ScrollView1.Width,PanelHeight)
+	panel1.BringToFront
+	
+	'panel1.Color = Colors.Black
+	paneltop = paneltop + k + 5dip
+	
+	panel0.Height = panel0.Height + (( Activity.Height - 60) * 0.1)
+	
+End Sub
+
+
+
+
+Sub ImageView1_Click
+	StartActivity(Add)
+End Sub
+
+Sub Button1_Click
+	AddMsgPanel(ScrlvQueue,"hello","hell","none", "12,3")
+	'ScrlvQueue.Panel.Height = 
+'	UpdateCgpa(1,"Hgbn2","lkjbvbnm",ScrlvQueue)
+End Sub
+
